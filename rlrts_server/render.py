@@ -7,11 +7,14 @@ from math import sqrt
 # Some colours
 white = (255, 255, 255)
 red = (239, 39, 19)
-green = (70, 111, 32)
-blue = (12, 170, 205)
-yellow = (234, 234, 45)
+green = (88, 240, 0)
+blue = (0, 88, 240)
+yellow = (255, 255, 0)
+black = (0, 0, 0)
+purple = (120, 20, 57)
 
-scale_factor = 8
+scale_factor = 12
+unit_radius = 20
 
 
 def to_local_coords((x, y)):
@@ -39,10 +42,10 @@ class Renderer(object):
         # Rows
         step = 2.5 * scale_factor
         for n in numpy.arange(0, self.h + step + 1, step):
-            pygame.draw.line(self.screen, white, (n, 0), (n, self.h), 1)
+            pygame.draw.line(self.screen, purple, (n, 0), (n, self.h), 1)
         # Columns
         for n in numpy.arange(0, self.w + step + 1, step):
-            pygame.draw.line(self.screen, white, (0, n), (self.w, n), 1)
+            pygame.draw.line(self.screen, purple, (0, n), (self.w, n), 1)
 
     def unit_iter(self):
         for team in self.s.teams.itervalues():
@@ -54,13 +57,13 @@ class Renderer(object):
             return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
         mp = pygame.mouse.get_pos()
         up = to_local_coords(unit.coords)
-        return vecDist(mp, up) < 5
+        return vecDist(mp, up) < unit_radius
 
     def draw_units(self):
         for unit in self.unit_iter():
             pos = map(lambda d: d * scale_factor, unit.coords)
             colour = blue if unit.team.name == "Herp" else yellow
-            pygame.draw.circle(self.screen, colour, pos, 5, 0)
+            pygame.draw.circle(self.screen, colour, pos, unit_radius, unit_radius / 2)
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -81,7 +84,7 @@ class Renderer(object):
             self.handle_events()
 
     def _do_draw(self):
-        self.screen.fill(green)
+        self.screen.fill(black)
         self.draw_mesh()
         self.draw_units()
         pygame.display.flip()
