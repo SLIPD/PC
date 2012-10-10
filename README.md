@@ -1,15 +1,9 @@
 # SLIP D 2012 PC Software
 This repository encompasses all of our software that will run on a PC
-(Raspberry Pi, server, and client)
+(server and client)
 
 
 # Components
-
-## Base station
-The base station will repackage information from the devices and forward it to
-the server; it will be careful to ensure that no duplicate data is sent to the
-server. It will also repackage and forward packets from the server to the
-devices.
 
 ## Game server
 The game server will implement the logic of the game and ensure that each
