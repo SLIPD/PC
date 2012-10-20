@@ -12,7 +12,7 @@ class Unit(object):
 
     def move(self, (x, y)):
         self.coords = (x, y)
-        self.world.steps[self.get_step_index] = self.team
+        self.world.steps[self.get_step_index()] = self.team
 
     def set_world(self, world):
         self.world = world
@@ -23,7 +23,7 @@ class Unit(object):
 
     def get_step_index(self):
         (i, j) = map(lambda n: floor(n / config.MESH_SQUARE_SIDE), self.coords)
-        return "%d_%d" % (i, j)
+        return (i, j)
 
     def get_step_indices(self):
         return map(lambda n: floor(n / config.MESH_SQUARE_SIDE), self.coords)

@@ -11,10 +11,16 @@ green = (88, 240, 0)
 blue = (0, 88, 240)
 yellow = (255, 255, 0)
 black = (0, 0, 0)
-purple = (120, 20, 57)
+purple = (116, 4, 181)
 
 scale_factor = 12
+step = 2.5 * scale_factor
 unit_radius = 20
+
+
+def darken((R, G, B)):
+    """ Make a colour a little darker """
+    return (R / 4, G / 4, B / 4)
 
 
 def to_local_coords((x, y)):
@@ -40,12 +46,18 @@ class Renderer(object):
 
     def draw_mesh(self):
         # Rows
-        step = 2.5 * scale_factor
         for n in numpy.arange(0, self.h + step + 1, step):
             pygame.draw.line(self.screen, purple, (n, 0), (n, self.h), 1)
         # Columns
         for n in numpy.arange(0, self.w + step + 1, step):
             pygame.draw.line(self.screen, purple, (0, n), (self.w, n), 1)
+
+    def draw_steps(self):
+        for (i, j), team in self.s.world.steps.items():
+            colour = darken(blue if team.name == "Herp" else yellow)
+            left = i * step
+            top = j * step
+            pygame.draw.rect(self.screen, colour, (left, top, step, step))
 
     def unit_iter(self):
         for team in self.s.teams.itervalues():
@@ -85,6 +97,7 @@ class Renderer(object):
 
     def _do_draw(self):
         self.screen.fill(black)
+        self.draw_steps()
         self.draw_mesh()
         self.draw_units()
         pygame.display.flip()
