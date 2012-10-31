@@ -4,7 +4,8 @@ from rlrts_server import world
 from itertools import repeat
 
 from zmq.core import context, socket
-from zmq.eventloop import zmqstream
+from zmq.eventloop import zmqstream, ioloop
+from zmq.utils import jsonapi
 
 teams = {"Herp": ["James", "Ben", "Smelly"],
          "Derp": ["Kit", "George", "Rose"]
@@ -24,12 +25,29 @@ class Server(object):
     position_re = re.compile("\(([^,]+), ?\(([0-9]+(?:\.[0-9]+)?), ?([0-9]+(?:\.[0-9]+)?), ?([0-9]+(?:\.[0-9]+)?)\)\)")
 
     def __init__(self):
-        self.state = "Initialization"
+        # Make a context
         self.ctx = context.Context(3)
+        self.ioloop = ioloop.IOLoop.instance()
+
+        # Make the PI socket
+        self.pi_socket = self.ctx.socket(socket.PAIR)
+        self.pi_port = self.pi_socket.bind_to_random_port("tcp://*")
+
+        self.pi_stream = zmqstream.ZMQStream(self.pi_socket,
+                                             self.ioloop)
+        self.pi_stream.on_recv(self.recv_pi)
+
+        # Prepare for team sockets
+        self.team_sockets = {}
+
+        # Make the main router socket
         self.socket = self.ctx.socket(socket.ROUTER)
         self.socket.bind("tcp://*:31415")
-        self.stream = zmqstream.ZMQStream(self.socket)
+
+        self.stream = zmqstream.ZMQStream(self.socket,
+                                          self.ioloop)
         self.stream.on_recv(self.recv)
+
         self.seen = {}
         self.current_orders = {}
         self.units = {}
@@ -59,6 +77,13 @@ class Server(object):
 
     def setup_team(self, team_name):
         self.teams[team_name] = world.Team(team_name)
+        sock = self.ctx.socket(socket.PAIR)
+        p = sock.bind_to_random_port("tcp://*")
+
+        stream = zmqstream.ZMQStream(sock, self.ioloop)
+        stream.on_recv(self.recv_client(team_name))
+
+        self.team_sockets[team_name] = (p, stream, sock)
 
     def send(self, recipient, msg):
         out = [recipient, ""] + msg
@@ -75,30 +100,46 @@ class Server(object):
             self.initialize(sender, msg_type, payload)
 
     def initialize(self, sender, msg_type, payload):
-        print payload
         if msg_type.startswith("PI"):
             # Initialize the raspberry pi connection
-            ## First two entries are width, height
-            width, height = map(int, payload[:2])
-            ## The next three are the location of the base station
-            bx, by, bz = map(float, payload[2:5])
-            self.setup_world((width, height), (bx, by, bz))
+            self.send(sender, [str(self.pi_port)])
 
-            # The rest of the entries will be device ids
-            device_ids = payload[5:]
-            names = []
-            for device_id in device_ids:
-                # We assume the devices are currently at the base station
-                names.append(self.assign_unit(device_id, (bx, by)))
-            self.send(sender, map(str, names))
-            self.seen[sender] = True
+            ### First two entries are width, height
+            #width, height = map(int, payload[:2])
+            ### The next three are the location of the base station
+            #bx, by, bz = map(float, payload[2:5])
+            #self.setup_world((width, height), (bx, by, bz))
+
+            ## The rest of the entries will be device ids
+            #device_ids = payload[5:]
+            #names = []
+            #for device_id in device_ids:
+            #    # We assume the devices are currently at the base station
+            #    names.append(self.assign_unit(device_id, (bx, by)))
+            #self.send(sender, map(str, names))
+            #self.seen[sender] = True
         elif msg_type.startswith("CLIENT"):
             # The payload will be [the team name]
             self.seen[sender] = self.teams[payload[0]]
-            self.send(sender, payload)
-        else:
-            print "Sending back"
-            self.send(sender, ["received"])
+            self.send(sender, [str(self.team_sockets[payload[0]][0])])
+
+    def recv_pi(self, message):
+        print "Receive PI"
+        m = jsonapi.loads(''.join(message))
+        print m
+
+    def recv_client(self, team_name):
+        team = self.teams[team_name]
+
+        def inner_function(message):
+            print "Receive team: %s" % team_name
+            try:
+                m = jsonapi.loads(''.join(message))
+            except jsonapi.jsonmod.JSONDecodeError:
+                pass
+            print m
+
+        return inner_function
 
     def dispatch(self, sender, msg_type, payload):
         if msg_type.startswith("PI"):
@@ -124,4 +165,5 @@ class Server(object):
 
 if __name__ == "__main__":
     s = Server()
-    s.stream.io_loop.start()
+    print "Starting"
+    s.ioloop.start()
