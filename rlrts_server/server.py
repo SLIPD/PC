@@ -54,6 +54,7 @@ class Server(object):
         self.seen = {}
         self.current_orders = {}
         self.units = {}
+        self.device_ids = {}
 
         self.render = render
 
@@ -78,6 +79,7 @@ class Server(object):
         unit = world.Unit(device_id, name, (x, y))
         self.teams[team_name].add_unit(unit)
         self.units[device_id] = unit
+        self.device_ids[name] = device_id
         return (device_id, name)
 
     def setup_team(self, team_name):
@@ -158,8 +160,12 @@ class Server(object):
                 j = jsonapi.loads(''.join(message))
                 m = "JSON: " + str(j)
 
+                d = {}
+                for name in j:
+                    d[self.device_ids[name]] = j[name]
+
                 r = {"state": "commanding",
-                     "commands": j
+                     "commands": d
                     }
 
                 self.pi_stream.send_json(r)
