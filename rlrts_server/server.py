@@ -147,6 +147,7 @@ class Server(object):
                     self.units[device_id].move((x, y))
                 if self.render is not None:
                     self.render.step()
+                self.send_units()
         except jsonapi.jsonmod.JSONDecodeError:
             m = "String: " + ''.join(message)
         print m
@@ -174,6 +175,19 @@ class Server(object):
             print m
 
         return inner_function
+
+    def send_units(self):
+        for team_name, team in self.teams.items():
+            to_send = []
+            for unit in team.units:
+                (i, j) = unit.get_step_index()
+                name = unit.name
+                to_send.append((name, (i, j)))
+            r = {"state": "position_update",
+                 "units": to_send}
+            (p, stream, sock) = self.team_sockets[team_name]
+            stream.send_json(r)
+
 
 def print_ready():
     print "Ready for connections"
