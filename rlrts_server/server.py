@@ -176,8 +176,12 @@ class Server(object):
 
         return inner_function
 
+def print_ready():
+    print "Ready for connections"
+
 
 if __name__ == "__main__":
     s = Server()
     print "Starting"
+    s.ioloop.add_callback(print_ready)
     s.ioloop.start()
