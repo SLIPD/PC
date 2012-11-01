@@ -10,6 +10,9 @@ from zmq.utils import jsonapi
 teams = {"Herp": ["James", "Ben", "Smelly"],
          "Derp": ["Kit", "George", "Rose"]
         }
+n_players = 0
+for l in teams.values():
+    n_players += len(l)
 
 teams_connected = ["Herp", "Derp"]
 
@@ -104,7 +107,7 @@ class Server(object):
     def initialize(self, sender, msg_type, payload):
         if msg_type.startswith("PI"):
             # Initialize the raspberry pi connection
-            self.send(sender, [str(self.pi_port)])
+            self.send(sender, [str(self.pi_port), n_players])
 
             ### First two entries are width, height
             #width, height = map(int, payload[:2])
