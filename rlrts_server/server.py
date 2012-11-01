@@ -21,8 +21,10 @@ for l in teams.values():
 teams_connected = ["Herp", "Derp"]
 
 
-def print_on_send(msg, status):
-    print ''.join(msg)
+def print_on_send(prefix):
+    def inner_func(msg, status):
+        print prefix + ''.join(msg)
+    return inner_func
 
 
 class Server(object):
@@ -38,7 +40,7 @@ class Server(object):
         self.pi_stream = zmqstream.ZMQStream(self.pi_socket,
                                              self.ioloop)
         self.pi_stream.on_recv(self.recv_pi)
-        self.pi_stream.on_send(print_on_send)
+        self.pi_stream.on_send(print_on_send("Sending PI: "))
 
         # Prepare for team sockets
         self.team_sockets = {}
@@ -89,6 +91,7 @@ class Server(object):
 
         stream = zmqstream.ZMQStream(sock, self.ioloop)
         stream.on_recv(self.recv_client(team_name))
+        stream.on_send(print_on_send("Sending to team \"%s\"" % team_name))
 
         self.team_sockets[team_name] = (p, stream, sock)
 
@@ -134,8 +137,6 @@ class Server(object):
                      "mapping": dict(names)
                     }
 
-                print "Sending %s" % r
-
                 self.pi_stream.send_json(r)
 
                 if self.render is not None:
@@ -151,8 +152,6 @@ class Server(object):
         print m
 
     def recv_client(self, team_name):
-        team = self.teams[team_name]
-
         def inner_function(message):
             (p, stream, sock) = self.team_sockets[team_name]
             print "Receive team: %s" % team_name
