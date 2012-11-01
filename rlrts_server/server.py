@@ -11,22 +11,16 @@ teams = {"Herp": ["James", "Ben", "Smelly"],
          "Derp": ["Kit", "George", "Rose"]
         }
 n_players = 0
+
+zero = (55.943721, -3.175135)
+tr = (55.953573, -3.155394)
 for l in teams.values():
     n_players += len(l)
 
 teams_connected = ["Herp", "Derp"]
 
-devices = [(1, (26, 25)),
-           (2, (27, 25)),
-           (3, (28, 25)),
-           (4, (29, 25)),
-           (5, (30, 25)),
-           (6, (31, 25))]
-
 
 class Server(object):
-    position_re = re.compile("\(([^,]+), ?\(([0-9]+(?:\.[0-9]+)?), ?([0-9]+(?:\.[0-9]+)?), ?([0-9]+(?:\.[0-9]+)?)\)\)")
-
     def __init__(self, render=None):
         # Make a context
         self.ctx = context.Context(3)
@@ -99,33 +93,14 @@ class Server(object):
         sender = msg[0]
         msg_type = msg[2]
         payload = msg[3:]
-        if sender in self.seen:
-            self.dispatch(sender, msg_type, payload)
-        else:
-            self.initialize(sender, msg_type, payload)
+        self.initialize(sender, msg_type, payload)
 
     def initialize(self, sender, msg_type, payload):
         if msg_type.startswith("PI"):
             # Initialize the raspberry pi connection
-            self.send(sender, [str(self.pi_port), n_players])
-
-            ### First two entries are width, height
-            #width, height = map(int, payload[:2])
-            ### The next three are the location of the base station
-            #bx, by, bz = map(float, payload[2:5])
-            #self.setup_world((width, height), (bx, by, bz))
-
-            ## The rest of the entries will be device ids
-            #device_ids = payload[5:]
-            #names = []
-            #for device_id in device_ids:
-            #    # We assume the devices are currently at the base station
-            #    names.append(self.assign_unit(device_id, (bx, by)))
-            #self.send(sender, map(str, names))
-            #self.seen[sender] = True
+            self.send(sender, [self.pi_port, n_players, zero[0], zero[1]])
         elif msg_type.startswith("CLIENT"):
             # The payload will be [the team name]
-            self.seen[sender] = self.teams[payload[0]]
             self.send(sender, [str(self.team_sockets[payload[0]][0])])
 
     def recv_pi(self, message):
@@ -147,7 +122,9 @@ class Server(object):
                     names.append(self.assign_unit(device_id, (bx, by)))
                     print "Device \"%s\" is called %s" % names[-1]
 
-                r = dict(names)
+                r = {"state": "naming",
+                     "mapping": dict(names)
+                    }
 
                 print "Sending %s" % r
 
@@ -180,18 +157,7 @@ class Server(object):
 
     def dispatch(self, sender, msg_type, payload):
         if msg_type.startswith("PI"):
-            if msg_type.startswith("PI_REQ"):
-                # The pi is requesting orders
-                self.send(sender, self.current_orders.items())
-            elif msg_type.startswith("PI_PUSH"):
-                # The pi is sending positions
-                for pos in payload:
-                    # Extract the device id and position using regex
-                    m = self.position_re.match(pos)
-                    device_id = m.group(1)
-                    x, y, z = map(lambda n: float(m.group(n)), [2, 3, 4])
-                    self.units[device_id].move((x, y))
-                    self.send(sender, ["received"])
+            pass
         elif msg_type.startswith("CLIENT"):
             if msg_type.startswith("CLIENT_REQ"):
                 # The client is requesting positions
