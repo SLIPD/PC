@@ -17,26 +17,36 @@ def pair_recv(msg):
 
 def send():
     pair_stream.io_loop.add_callback(send)
-    print "======================="
-    print "Message: (^D to finish)"
-    print "-----------------------"
+    print "====================================="
+    print "Message: (valid JSON or ^D to finish)"
+    print "-------------------------------------"
     msg = ''
+    continuing = False
     while True:
         try:
-            msg += raw_input()
+            msg += raw_input("... " if continuing else "    ")
         except EOFError:
             break
+        try:
+            json.loads(msg)
+            break
+        except ValueError:
+            continuing = True
     print
     if msg == "init_pi":
         msg = """{ "state": "init",
-  "dimensions": [50, 50],
-  "base_location": [25, 25, 0],
-  "device_ids": ["1", "2", "3", "4", "5", "6"]
-}"""
+                   "dimensions": [50, 50],
+                   "base_location": [25, 25, 0],
+                   "device_ids": ["1", "2", "3", "4", "5", "6"]
+                 }"""
     elif msg == "update_pi":
         msg = """{ "state": "play",
-  "updates": [["1", [20, 20, 5]], ["4", [41, 29, 9]]]
-}"""
+                   "updates": [["1", [20, 20, 5]], ["4", [41, 29, 9]]]
+                 }"""
+    elif msg == "send_commands":
+        msg = """{ "Kit": [[20, 20]],
+                   "Smelly": [[43, 31], [21, 42]]
+                 }"""
     if msg != '':
         pair_stream.send(msg)
         pair_stream.flush()
