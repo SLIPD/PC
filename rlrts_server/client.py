@@ -34,6 +34,7 @@ def send():
 
 def recv(msg):
     global pair_socket, pair_stream
+    print msg
     port = int(msg[0])
     print port
     pair_socket = ctx.socket(socket.PAIR)

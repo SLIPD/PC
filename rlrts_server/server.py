@@ -14,10 +14,15 @@ n_players = 0
 
 zero = (55.943721, -3.175135)
 tr = (55.953573, -3.155394)
+
 for l in teams.values():
     n_players += len(l)
 
 teams_connected = ["Herp", "Derp"]
+
+
+def print_on_send(msg, status):
+    print ''.join(msg)
 
 
 class Server(object):
@@ -33,6 +38,7 @@ class Server(object):
         self.pi_stream = zmqstream.ZMQStream(self.pi_socket,
                                              self.ioloop)
         self.pi_stream.on_recv(self.recv_pi)
+        self.pi_stream.on_send(print_on_send)
 
         # Prepare for team sockets
         self.team_sockets = {}
@@ -98,7 +104,7 @@ class Server(object):
     def initialize(self, sender, msg_type, payload):
         if msg_type.startswith("PI"):
             # Initialize the raspberry pi connection
-            self.send(sender, [self.pi_port, n_players, zero[0], zero[1]])
+            self.send(sender, map(str, [self.pi_port, n_players, zero[0], zero[1]]))
         elif msg_type.startswith("CLIENT"):
             # The payload will be [the team name]
             self.send(sender, [str(self.team_sockets[payload[0]][0])])
@@ -146,25 +152,24 @@ class Server(object):
         team = self.teams[team_name]
 
         def inner_function(message):
+            (p, stream, sock) = self.team_sockets[team_name]
             print "Receive team: %s" % team_name
             try:
-                m = "JSON: " + str(jsonapi.loads(''.join(message)))
+                j = jsonapi.loads(''.join(message))
+                m = "JSON: " + str(j)
+
+                r = {"state": "commanding",
+                     "commands": j
+                    }
+
+                self.pi_stream.send_json(r)
+
             except jsonapi.jsonmod.JSONDecodeError:
                 m = "String: " + ''.join(message)
             print m
 
         return inner_function
 
-    def dispatch(self, sender, msg_type, payload):
-        if msg_type.startswith("PI"):
-            pass
-        elif msg_type.startswith("CLIENT"):
-            if msg_type.startswith("CLIENT_REQ"):
-                # The client is requesting positions
-                pass
-            elif msg_type.startswith("CLIENT_PUSH"):
-                # The client is sending orders
-                pass
 
 if __name__ == "__main__":
     s = Server()
