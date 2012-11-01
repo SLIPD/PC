@@ -24,7 +24,7 @@ devices = [(1, (26, 25)),
 class Server(object):
     position_re = re.compile("\(([^,]+), ?\(([0-9]+(?:\.[0-9]+)?), ?([0-9]+(?:\.[0-9]+)?), ?([0-9]+(?:\.[0-9]+)?)\)\)")
 
-    def __init__(self):
+    def __init__(self, render=None):
         # Make a context
         self.ctx = context.Context(3)
         self.ioloop = ioloop.IOLoop.instance()
@@ -51,6 +51,8 @@ class Server(object):
         self.seen = {}
         self.current_orders = {}
         self.units = {}
+
+        self.render = render
 
         # Use the data entered on the web interface to prepopulate things
         ## Populate teams from known set
@@ -125,7 +127,39 @@ class Server(object):
 
     def recv_pi(self, message):
         print "Receive PI"
-        m = jsonapi.loads(''.join(message))
+        try:
+            j = jsonapi.loads(''.join(message))
+            m = "JSON: " + str(j)
+
+            if j['state'] == 'init':
+                # Perform initialisation steps
+                (width, height) = map(int, j['dimensions'])
+                print "dims: (%d, %d)" % (width, height)
+                (bx, by, bz) = j['base_location']
+                print "base: (%d, %d, %d)" % (bx, by, bz)
+                self.setup_world((width, height), (bx, by, bz))
+
+                names = []
+                for device_id in j['device_ids']:
+                    names.append(self.assign_unit(device_id, (bx, by)))
+                    print "Device \"%s\" is called %s" % names[-1]
+
+                r = dict(names)
+
+                print "Sending %s" % r
+
+                self.pi_stream.send_json(r)
+
+                if self.render is not None:
+                    self.render.ready()
+            elif j['state'] == 'play':
+                for (device_id, (x, y, z)) in j['updates']:
+                    print "%s has moved to (%d, %d, %d)" % (device_id, x, y, z)
+                    self.units[device_id].move((x, y))
+                if self.render is not None:
+                    self.render.step()
+        except jsonapi.jsonmod.JSONDecodeError:
+            m = "String: " + ''.join(message)
         print m
 
     def recv_client(self, team_name):
@@ -134,9 +168,9 @@ class Server(object):
         def inner_function(message):
             print "Receive team: %s" % team_name
             try:
-                m = jsonapi.loads(''.join(message))
+                m = "JSON: " + str(jsonapi.loads(''.join(message)))
             except jsonapi.jsonmod.JSONDecodeError:
-                pass
+                m = "String: " + ''.join(message)
             print m
 
         return inner_function

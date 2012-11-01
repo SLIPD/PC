@@ -32,12 +32,13 @@ def from_local_coords((x, y)):
 
 
 class Renderer(object):
-    def __init__(self):
+    def __init__(self, s=None):
         pygame.init()
         self.moving = None
 
-        self.s = server.Server()
+        self.s = s or server.Server(self)
 
+    def ready(self):
         self.dims = (self.w, self.h)\
                   = map(lambda d: d * scale_factor, self.s.world.dimensions)
 
@@ -89,6 +90,10 @@ class Renderer(object):
                 if self.moving:
                     self.moving.move(from_local_coords(pygame.mouse.get_pos()))
 
+    def step(self):
+        self._do_draw()
+        self.handle_events()
+
     def main_loop(self):
         done = False
         while not done:
@@ -104,4 +109,4 @@ class Renderer(object):
 
 if __name__ == "__main__":
     r = Renderer()
-    r.main_loop()
+    r.s.ioloop.start()

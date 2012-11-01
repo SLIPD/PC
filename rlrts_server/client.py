@@ -1,5 +1,6 @@
 from zmq.core import context, socket
 from zmq.eventloop import zmqstream
+import json
 
 ctx = context.Context.instance()
 s = ctx.socket(socket.REQ)
@@ -11,15 +12,24 @@ pair_stream = None
 
 
 def pair_recv(msg):
-    print msg
+    print json.loads(''.join(msg))
 
 
 def send():
     pair_stream.io_loop.add_callback(send)
-    msg = raw_input("Message: ")
-    pair_stream.send_json(msg)
-    pair_stream.send(msg)
-    #pair_stream.flush()
+    print "======================="
+    print "Message: (^D to finish)"
+    print "-----------------------"
+    msg = ''
+    while True:
+        try:
+            msg += raw_input()
+        except EOFError:
+            break
+    print
+    if msg != '':
+        pair_stream.send(msg)
+        pair_stream.flush()
 
 
 def recv(msg):
@@ -28,7 +38,6 @@ def recv(msg):
     print port
     pair_socket = ctx.socket(socket.PAIR)
     pair_socket.connect("tcp://localhost:%d" % port)
-    print pair_socket
 
     pair_stream = zmqstream.ZMQStream(pair_socket, stream.io_loop)
     pair_stream.on_recv(pair_recv)
