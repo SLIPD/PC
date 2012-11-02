@@ -50,6 +50,10 @@ class Team(object):
         for u in self.units:
             u.set_world(world)
 
+    def get_steps(self):
+        s = self.world.steps
+        return [k for k in s if s[k] is self]
+
     def __str__(self):
         return self.name
 
@@ -61,9 +65,22 @@ class World(object):
 
         self._init_mesh()
 
+    def update_mesh(self, (i, j, z)):
+        self.mesh[i][j] = z
+        self.dirty.append((i, j))
+
+    def get_mesh_serial(self):
+        out = []
+        for (i, j) in self.dirty:
+            out.append((i, j, self.mesh[i][j]))
+        self.dirty = []
+        return out
+
     def _init_mesh(self):
         n_rows = round(self.height / config.MESH_SQUARE_SIDE)
         n_cols = round(self.width / config.MESH_SQUARE_SIDE)
+
+        self.dirty = []
 
         self.mesh = numpy.zeros((n_rows, n_cols), dtype=numpy.float64)
         self.steps = {}

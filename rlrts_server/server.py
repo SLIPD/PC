@@ -145,9 +145,13 @@ class Server(object):
                 for (device_id, (x, y, z)) in j['updates']:
                     print "%s has moved to (%d, %d, %d)" % (device_id, x, y, z)
                     self.units[device_id].move((x, y))
+                    (i, j) = self.units[device_id].get_mesh_indices()
+                    self.world.update_mesh((i, j, z))
                 if self.render is not None:
                     self.render.step()
                 self.send_units()
+                self.send_mesh()
+                self.send_steps()
         except jsonapi.jsonmod.JSONDecodeError:
             m = "String: " + ''.join(message)
         print m
@@ -180,13 +184,28 @@ class Server(object):
         for team_name, team in self.teams.items():
             to_send = []
             for unit in team.units:
-                (i, j) = unit.get_step_index()
+                (x, y) = unit.coords
                 name = unit.name
-                to_send.append((name, (i, j)))
+                to_send.append((name, (x, y)))
             r = {"state": "position_update",
                  "units": to_send}
             (p, stream, sock) = self.team_sockets[team_name]
             stream.send_json(r)
+
+    def send_mesh(self):
+        mesh_updates = self.world.get_mesh_serial()
+        to_send = {"state": "mesh_update",
+                   "updates": mesh_updates}
+        for team_name in self.teams:
+            (p, stream, sock) = self.team_sockets[team_name]
+            stream.send_json(to_send)
+
+    def send_steps(self):
+        for team_name, team in self.teams.items():
+            (p, stream, sock) = self.team_sockets[team_name]
+            to_send = {"state": "steps",
+                       "steps": team.get_steps()}
+            stream.send_json(to_send)
 
 
 def print_ready():
