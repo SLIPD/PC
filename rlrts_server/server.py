@@ -1,11 +1,12 @@
-import re
-
 from rlrts_server import world
 from itertools import repeat
 
 from zmq.core import context, socket
 from zmq.eventloop import zmqstream, ioloop
 from zmq.utils import jsonapi
+
+from geopy.point import Point
+from geopy import distance
 
 teams = {"Herp": ["James", "Ben", "Smelly"],
          "Derp": ["Kit", "George", "Rose"]
@@ -14,6 +15,15 @@ n_players = 0
 
 zero = (55.943721, -3.175135)
 tr = (55.953573, -3.155394)
+
+left = Point(zero[0], 0)
+right = Point(tr[0], 0)
+
+bottom = Point(0, zero[1])
+top = Point(0, tr[1])
+
+w, h = distance.distance(left, right).m, distance.distance(top, bottom).m
+
 
 for l in teams.values():
     n_players += len(l)
@@ -112,7 +122,8 @@ class Server(object):
     def initialize(self, sender, msg_type, payload):
         if msg_type.startswith("PI"):
             # Initialize the raspberry pi connection
-            self.send(sender, map(str, [self.pi_port, n_players, zero[0], zero[1]]))
+            self.send(sender, map(str,
+                                 [self.pi_port, n_players, zero[0], zero[1]]))
         elif msg_type.startswith("CLIENT"):
             # The payload will be [the team name]
             self.send(sender, [str(self.team_sockets[payload[0]][0])])
@@ -128,7 +139,7 @@ class Server(object):
 
             if j['state'] == 'init':
                 # Perform initialisation steps
-                (width, height) = map(int, j['dimensions'])
+                (width, height) = (w, h)
                 print "dims: (%d, %d)" % (width, height)
                 (bx, by, bz) = j['base_location']
                 print "base: (%d, %d, %d)" % (bx, by, bz)

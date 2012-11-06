@@ -35,7 +35,6 @@ def send():
     print
     if msg == "init_pi":
         msg = """{ "state": "init",
-                   "dimensions": [50, 50],
                    "base_location": [25, 25, 0],
                    "device_ids": ["1", "2", "3", "4", "5", "6"]
                  }"""
