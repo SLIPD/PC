@@ -23,7 +23,10 @@ teams_connected = ["Herp", "Derp"]
 
 def print_on_send(prefix):
     def inner_func(msg, status):
-        print prefix + ''.join(msg)
+        try:
+            print prefix + ''.join(msg)
+        except TypeError:
+            print prefix + msg
     return inner_func
 
 
