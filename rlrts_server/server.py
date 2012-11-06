@@ -117,7 +117,10 @@ class Server(object):
     def recv_pi(self, message):
         print "Receive PI"
         try:
-            j = jsonapi.loads(''.join(message))
+            try:
+                j = jsonapi.loads(''.join(message))
+            except TypeError:
+                j = jsonapi.loads(message)
             m = "JSON: " + str(j)
 
             if j['state'] == 'init':
