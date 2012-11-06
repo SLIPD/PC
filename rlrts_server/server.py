@@ -26,7 +26,7 @@ def print_on_send(prefix):
         try:
             print prefix + ''.join(msg)
         except TypeError:
-            print prefix + msg
+            print "%s %s" % (prefix, msg)
     return inner_func
 
 
