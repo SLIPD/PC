@@ -5,4 +5,7 @@ from rlrts_server import server
 s = server.Server()
 print "Starting"
 s.ioloop.add_callback(server.print_ready)
-s.ioloop.start()
+try:
+    s.ioloop.start()
+except KeyboardInterrupt:
+    print "Finished"
