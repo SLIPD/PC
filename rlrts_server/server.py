@@ -169,8 +169,11 @@ class Server(object):
                 self.send_units()
                 self.send_mesh()
                 self.send_steps()
+                self.send_territories()
         except jsonapi.jsonmod.JSONDecodeError:
             m = "String: " + ''.join(message)
+        finally:
+            pass
         print m
 
     def recv_client(self, team_name):
@@ -198,7 +201,7 @@ class Server(object):
         return inner_function
 
     def send_units(self):
-        for team_name, team in self.teams.items():
+        for team_name, team in self.teams.iteritems():
             to_send = []
             for unit in team.units:
                 (x, y) = unit.coords
@@ -218,10 +221,18 @@ class Server(object):
             stream.send_json(to_send)
 
     def send_steps(self):
-        for team_name, team in self.teams.items():
+        for team_name, team in self.teams.iteritems():
             (p, stream, sock) = self.team_sockets[team_name]
             to_send = {"state": "steps",
                        "steps": team.get_steps()}
+            stream.send_json(to_send)
+
+    def send_territories(self):
+        territories = self.world.get_territories()
+        for team_name, team in self.teams.iteritems():
+            (p, stream, sock) = self.team_sockets[team_name]
+            to_send = {"state": "territories",
+                       "territories": territories}
             stream.send_json(to_send)
 
 
