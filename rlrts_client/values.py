@@ -1,0 +1,5 @@
+from pygame.color import Color
+
+black = Color(0, 0, 0)
+white = Color(255, 255, 255)
+purple = Color(116, 4, 181)
