@@ -18,16 +18,23 @@ def around(num, n):
 
 
 class Drawable(object):
+    def __init__(self):
+        self._zoom = 1.0
+        self.dirty = True
+
     def set_zoom(self, z):
         self._zoom = z
-        self._out_surface = scale(self._surface, z)
+        self.rezoom()
+
+    def rezoom(self):
+        self._out_surface = scale(self._surface, self._zoom)
+        self.dirty = False
 
     @property
     def out_surface(self):
-        try:
-            return self._out_surface
-        except AttributeError:
-            return self._surface
+        if self.dirty:
+            self.rezoom()
+        return self._out_surface
 
 
 class Territory(Drawable):
@@ -37,6 +44,7 @@ class Territory(Drawable):
 
 class World(Drawable):
     def __init__(self, (width, height), (bx, by, bz)):
+        super(World, self).__init__()
         self.dimensions = (self.width, self.height) = (width, height)
         self._wr = float(self.width) / territory_side
         self._hr = float(self.height) / territory_side
@@ -67,14 +75,14 @@ class World(Drawable):
 
         self._surface.fill(black)
         w, h = self.x_res, self.y_res
-        bs = self.bin_size / 2
+        bs = self.bin_size / 4
         for (i, j), f in self.bins.iteritems():
             p = min(float(f) / bs, 1)
-            print p
             pygame.draw.rect(self._surface,
                              percent_colour(purple, p),
                              (i, j, w, h)
                             )
+        self.dirty = True
 
     def _init_mesh(self):
         self.steps = []

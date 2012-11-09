@@ -1,4 +1,5 @@
 import pygame
+from pygame import mouse
 from pygame.locals import *
 
 # Some local constants
@@ -12,12 +13,16 @@ ON_RELEASE = 5
 class Control(object):
     def __init__(self):
         self.callbacks = {}
+        self.mouse = []
 
     def register(self, key, callback, method=ON_PRESS):
         try:
             self.callbacks[method][key] = callback
         except KeyError:
             self.callbacks[method] = {key: callback}
+
+    def register_mouse(self, condition, callback):
+        self.mouse.append((condition, callback))
 
     def handle_events(self):
         keys = pygame.key.get_pressed()
@@ -34,3 +39,6 @@ class Control(object):
             for key, callback in self.callbacks[WHILE_PRESSED].iteritems():
                 if keys[key]:
                     callback()
+        for (condition, callback) in self.mouse:
+            if condition(mouse.get_pos(), mouse.get_pressed()):
+                callback(mouse.get_pos(), mouse.get_pressed())

@@ -40,6 +40,9 @@ class Frame(object):
         s = surface
         self.screen.blit(s, self.get_in_coords((x, y), p))
 
+    def gui_blit(self, surface, (x, y)):
+        self.screen.blit(surface, (x, y))
+
     def get_in_coords(self, (x, y), p=False):
         w = self.w / 2.0
         h = self.h / 2.0
@@ -84,6 +87,9 @@ class Frame(object):
 
         for key in sorted(layers.keys()):
             for (surface, x, y, p) in layers[key]:
-                self.blit(surface, (x - sx, y - sy), p)
+                if key == "gui":
+                    self.gui_blit(surface, (x, y))
+                else:
+                    self.blit(surface, (x - sx, y - sy), p)
 
         pygame.display.flip()
