@@ -1,6 +1,7 @@
 import pygame
 
 from rlrts_client.world import Drawable
+from rlrts_client.values import black
 
 
 class Slider(Drawable):
@@ -21,6 +22,7 @@ class Slider(Drawable):
         pygame.draw.line(self.bg, self.color, (0, 25), (width, 25))
 
         self._surface = pygame.surface.Surface((width + 1, 50))
+        self._surface.set_colorkey(black)
 
         self.draw_slider()
 
