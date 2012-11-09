@@ -14,7 +14,7 @@ class Slider(Drawable):
 
         self.x, self.y = x, y
 
-        self.color = (100, 100, 100)
+        self.color = (200, 200, 200)
 
         self.bg = pygame.surface.Surface((width + 1, 50))
         pygame.draw.line(self.bg, self.color, (0, 0), (0, 50))
