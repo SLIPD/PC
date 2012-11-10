@@ -1,12 +1,11 @@
 from math import sqrt, floor
 from collections import Counter
-from copy import copy
 
 import pygame
 
 from rlrts_client.funcs import scale, percent_colour
 from rlrts_server import config
-from rlrts_client.values import black, purple, yellow
+from rlrts_client.values import black, purple, yellow, red
 
 
 territory_side = int(sqrt(config.N_TERRITORIES))
@@ -56,7 +55,6 @@ class Territory(Drawable):
 
     @x.setter
     def x(self, value):
-        print value
         self._x = value
 
     @property
@@ -66,12 +64,15 @@ class Territory(Drawable):
     @team.setter
     def team(self, team):
         self._team = team
-        color = purple if team == self.world.team else yellow
+        if team is None:
+            self._surface = pygame.surface.Surface((self.w, self.h))
+            self._surface.set_alpha(51)
+            self.dirty = True
+            return
+        color = red if team == self.world.team else yellow
         self._draw(color)
 
     def _draw(self, color):
-        print self.x, self.y
-        print self.i, self.j
         pygame.draw.rect(self._surface,
                          color,
                          (0, 0, self.w, self.h)
