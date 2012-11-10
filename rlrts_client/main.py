@@ -3,6 +3,7 @@ from pygame.locals import DOUBLEBUF, HWSURFACE, K_s, K_MINUS, K_EQUALS,\
                           K_ESCAPE, K_UP, K_DOWN, K_LEFT, K_RIGHT
 
 import numpy.random as nprd
+from random import choice
 
 
 from rlrts_client import frame, control
@@ -142,6 +143,9 @@ class Game(object):
 
         # Setup game state
         self.set_steps()
+        for i in xrange(12):
+            for j in xrange(12):
+                self.w.set_territory((i, j), choice(["Derp", "Herp"]))
 
     def run_loop(self):
         while not self.done:
