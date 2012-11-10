@@ -111,6 +111,7 @@ class Game(object):
 
             # Debug
             (K_s, self.set_steps),
+            (K_s, self.randomize_territories),
             ]
 
         for e in key_events:
@@ -140,12 +141,14 @@ class Game(object):
         self.f.zoom = 1.0
         self.f.x = dims[0] // 2
         self.f.y = dims[1] // 2
-
         # Setup game state
         self.set_steps()
+        self.randomize_territories()
+
+    def randomize_territories(self):
         for i in xrange(12):
             for j in xrange(12):
-                self.w.set_territory((i, j), choice(["Derp", "Herp"]))
+                self.w.set_territory((i, j), choice(["Derp", "Herp", None]))
 
     def run_loop(self):
         while not self.done:
