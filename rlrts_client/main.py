@@ -14,114 +14,146 @@ from rlrts_client.values import black
 flags = DOUBLEBUF | HWSURFACE  # | FULLSCREEN
 
 
-def quit():
-    global done
-    done = True
+class Game(object):
+    def quit(self):
+        self.done = True
 
+    def toggle_fullscreen(self):
+        pygame.display.toggle_fullscreen()
 
-def toggle_fullscreen():
-    pygame.display.toggle_fullscreen()
+    def inc_zoom(self, i):
+        def inner_func(*args, **kwargs):
+            if self.f.zoom + i > 0:
+                self.f.zoom += i
+        return inner_func
 
+    def set_zoom(self, mini, maxi):
+        def inner_func(z, *args, **kwargs):
+            self.f.zoom = (z * (maxi - mini)) + mini
+        return inner_func
 
-def inc_zoom(f, i):
-    def inner_func(*args, **kwargs):
-        if f.zoom + i > 0:
-            f.zoom += i
-    return inner_func
+    def move_camera(self, (dx, dy)):
+        def inner_func(*args, **kwargs):
+            self.f.x += dx
+            self.f.y += dy
+        return inner_func
 
+    def get_steps(self):
+        """ Generates random step data for testing """
+        limit = 1000 / 2.5
+        n = 10000
 
-def set_zoom(f, mini, maxi):
-    def inner_func(z, *args, **kwargs):
-        f.zoom = (z * (maxi - mini)) + mini
-    return inner_func
+        mu = limit / 2
+        sigma = limit / 4
+        return zip(nprd.normal(mu, sigma, size=n),
+                   nprd.normal(mu, sigma, size=n))
 
+    def set_steps(self):
+        """ Sets random step data for testing """
+        steps = self.get_steps()
+        self.w.set_steps(steps)
 
-def move_camera(f, (dx, dy)):
-    def inner_func(*args, **kwargs):
-        f.x += dx
-        f.y += dy
-    return inner_func
+    def hit_edge(self, edge):
+        """ Returns a function that returns true if the mouse is
+            touching the given edge """
+        (w, h) = self.dims
 
+        def inner_func((x, y), pressed):
+            if edge == "left":
+                return x <= 0
+            elif edge == "right":
+                return x >= (w - 1)
+            elif edge == "top":
+                return y <= 0
+            elif edge == "bottom":
+                return y >= (h - 1)
+        return inner_func
 
-def get_steps():
-    limit = 1000 / 2.5
-    n = 10000
+    def __init__(self, dims, team):
+        # Initialise pygame and screen
+        pygame.init()
+        #pygame.event.set_grab(True)
 
-    mu = limit / 2
-    sigma = limit / 4
-    return zip(nprd.normal(mu, sigma, size=n), nprd.normal(mu, sigma, size=n))
+        self.screen = pygame.display.set_mode(dims, flags)
 
+        # Add some useful properties
+        self.dims = dims
+        self.done = False
+        self.FPS = 120.0
 
-def set_steps(world):
-    def inner_func(*args, **kwargs):
-        steps = get_steps()
-        world.set_steps(steps)
-    return inner_func
+        self.clock = pygame.time.Clock()
 
+        # Set up game elements
+        self.w = World((1000, 1000), (25, 25, 0))
+        self.f = frame.Frame(self.screen)
+        self.c = control.Control()
+        self.s = Slider((10, 10), 500)
+        self.s.on_update(self.set_zoom(0.2, 4))
 
-def hit_edge(edge, (w, h)):
-    def inner_func((x, y), pressed):
-        if edge == "left":
-            return x <= 0
-        elif edge == "right":
-            return x >= (w - 1)
-        elif edge == "top":
-            return y <= 0
-        elif edge == "bottom":
-            return y >= (h - 1)
-    return inner_func
+        # Register control events
+        cam_speed = 2
+        ## Keyboard events
+        key_events = [
+            # Meta functions (quit, menu)
+            (K_ESCAPE, self.quit, control.ON_PRESS),
 
+            # Zoom functions
+            (K_EQUALS, self.inc_zoom(0.01), control.WHILE_PRESSED),
+            (K_MINUS, self.inc_zoom(-0.01), control.WHILE_PRESSED),
 
-def main(dims):
-    pygame.init()
+            # Camera movement
+            (K_UP, self.move_camera((0, -cam_speed)), control.WHILE_PRESSED),
+            (K_DOWN, self.move_camera((0, cam_speed)), control.WHILE_PRESSED),
+            (K_LEFT, self.move_camera((-cam_speed, 0)), control.WHILE_PRESSED),
+            (K_RIGHT, self.move_camera((cam_speed, 0)), control.WHILE_PRESSED),
 
-    global done
-    done = False
-    screen = pygame.display.set_mode(dims, flags)
-    FPS = 120.0
+            # Debug
+            (K_s, self.set_steps),
+            ]
 
-    clock = pygame.time.Clock()
+        for e in key_events:
+            self.c.register(*e)
 
-    global f
-    f = frame.Frame(screen)
-    c = control.Control()
+        ## Mouse events
+        mouse_events = [
+            (self.hit_edge("left"), self.move_camera((-cam_speed, 0))),
+            (self.hit_edge("top"), self.move_camera((0, -cam_speed))),
+            (self.hit_edge("right"), self.move_camera((cam_speed, 0))),
+            (self.hit_edge("bottom"), self.move_camera((0, cam_speed))),
 
-    c.register(K_ESCAPE, quit, control.ON_PRESS)
-    c.register(K_EQUALS, inc_zoom(f, 0.01), control.WHILE_PRESSED)
-    c.register(K_MINUS, inc_zoom(f, -0.01), control.WHILE_PRESSED)
-    c.register(K_UP, move_camera(f, (0, -1)), control.WHILE_PRESSED)
-    c.register(K_DOWN, move_camera(f, (0, 1)), control.WHILE_PRESSED)
-    c.register(K_LEFT, move_camera(f, (-1, 0)), control.WHILE_PRESSED)
-    c.register(K_RIGHT, move_camera(f, (1, 0)), control.WHILE_PRESSED)
+            # Slider control
+            (self.s.have_mouse, self.s.update_pos),
+            ]
 
-    cam_speed = 2
+        for e in mouse_events:
+            self.c.register_mouse(*e)
 
-    c.register_mouse(hit_edge("left", dims), move_camera(f, (-cam_speed, 0)))
-    c.register_mouse(hit_edge("top", dims), move_camera(f, (0, -cam_speed)))
-    c.register_mouse(hit_edge("right", dims), move_camera(f, (cam_speed, 0)))
-    c.register_mouse(hit_edge("bottom", dims), move_camera(f, (0, cam_speed)))
+        # Add drawable objects
+        self.f.add_drawable(self.w)
+        self.f.add_drawable(self.s)
 
-    w = World((1000, 1000), (25, 25, 0))
-    steps = get_steps()
-    w.set_steps(steps)
-    f.add_drawable(w)
+        # Position the camera
+        self.f.zoom = 1.0
+        self.f.x = dims[0] // 2
+        self.f.y = dims[1] // 2
 
-    c.register(K_s, set_steps(w))
+        # Setup game state
+        self.set_steps()
 
-    s = Slider((10, 10), 500)
-    s.on_update(set_zoom(f, 0.2, 4))
-    f.add_drawable(s)
-    c.register_mouse(s.have_mouse, s.update_pos)
+    def run_loop(self):
+        while not self.done:
+            self.clock.tick(self.FPS)
 
-    f.zoom = 0.8
-    f.x = dims[0] // 2
-    f.y = dims[1] // 2
-    while not done:
-        clock.tick(FPS)
+            self.c.handle_events()
+            self.screen.fill(black)
+            self.f.render()
 
-        c.handle_events()
-        screen.fill(black)
-        f.render()
+    def __call__(self):
+        self.run_loop()
 
 if __name__ == "__main__":
-    main((1280, 800))
+    team = raw_input("Enter team name: ")
+    if team == "":
+        team = "Herp"
+    g = Game((640, 400), team)
+    g.run_loop()
