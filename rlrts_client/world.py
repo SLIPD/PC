@@ -5,7 +5,7 @@ import pygame
 
 from rlrts_client.funcs import scale, percent_colour
 from rlrts_server import config
-from rlrts_client.values import black, purple, yellow, red
+from rlrts_client.values import black, purple, yellow, white
 
 
 territory_side = int(sqrt(config.N_TERRITORIES))
@@ -37,17 +37,38 @@ class Drawable(object):
         return self._out_surface
 
 
+class Unit(Drawable):
+    def __init__(self, name, (x, y)):
+        super(Unit, self).__init__()
+        self.font = pygame.font.Font(pygame.font.match_font('ubuntu'), 20)
+
+        self.name = name
+        dims = (100, 50)
+        radius = 5
+        self.circle_loc = (radius, dims[1] - radius)
+
+        self._surface = pygame.surface.Surface(dims)
+        self._surface.set_colorkey(black)
+        self.x, self.y = x, y
+        t = self.font.render(name, True, white)
+        self._surface.blit(t, (10, 20))
+        pygame.draw.circle(self._surface, white, self.circle_loc, radius)
+
+    def draw(self):
+        dx, dy = self.circle_loc
+        return (self.out_surface, self.x - dx, self.y - dy, 2)
+
+
 class Territory(Drawable):
     def __init__(self, world, (i, j)):
         super(Territory, self).__init__()
         self.world = world
-        self.w = world.n_cols // territory_side
-        self.h = world.n_rows // territory_side
+        self.w = (world.n_cols + 0.5) / float(territory_side)
+        self.h = (world.n_rows + 0.5) / float(territory_side)
         self.i, self.j = i, j
         self.x, self.y = i * self.w, j * self.h
 
-        self._surface = pygame.surface.Surface((self.w, self.h))
-        self._surface.set_alpha(51)
+        self.team = None
 
     @property
     def x(self):
@@ -66,13 +87,16 @@ class Territory(Drawable):
         self._team = team
         if team is None:
             self._surface = pygame.surface.Surface((self.w, self.h))
-            self._surface.set_alpha(51)
+            self._surface.set_colorkey(black)
             self.dirty = True
             return
-        color = red if team == self.world.team else yellow
+        color = white if team == self.world.team else yellow
         self._draw(color)
 
     def _draw(self, color):
+        self._surface = pygame.surface.Surface((self.w, self.h))
+        self._surface.set_alpha(51)
+
         pygame.draw.rect(self._surface,
                          color,
                          (0, 0, self.w, self.h)

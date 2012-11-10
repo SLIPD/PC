@@ -1,4 +1,5 @@
 import pygame
+import pygame.font
 from pygame.locals import DOUBLEBUF, HWSURFACE, K_s, K_MINUS, K_EQUALS,\
                           K_ESCAPE, K_UP, K_DOWN, K_LEFT, K_RIGHT
 
@@ -7,12 +8,12 @@ from random import choice
 
 
 from rlrts_client import frame, control
-from rlrts_client.world import World
+from rlrts_client.world import World, Unit
 from rlrts_client.gui import Slider
 from rlrts_client.values import black
 
 
-flags = DOUBLEBUF | HWSURFACE  # | FULLSCREEN
+flags = DOUBLEBUF | HWSURFACE
 
 
 class Game(object):
@@ -41,7 +42,7 @@ class Game(object):
 
     def get_steps(self):
         """ Generates random step data for testing """
-        limit = 1000 / 2.5
+        limit = 2000 / 2.5
         n = 10000
 
         mu = limit / 2
@@ -86,11 +87,11 @@ class Game(object):
         self.clock = pygame.time.Clock()
 
         # Set up game elements
-        self.w = World((1000, 1000), (25, 25, 0), team=team)
+        self.w = World((2000, 2000), (25, 25, 0), team=team)
         self.f = frame.Frame(self.screen)
         self.c = control.Control()
         self.s = Slider((10, 10), 500)
-        self.s.on_update(self.set_zoom(0.2, 4))
+        self.s.on_update(self.set_zoom(0.2, 10))
 
         # Register control events
         cam_speed = 2
@@ -141,9 +142,12 @@ class Game(object):
         self.f.zoom = 1.0
         self.f.x = dims[0] // 2
         self.f.y = dims[1] // 2
+
         # Setup game state
         self.set_steps()
         self.randomize_territories()
+        u = Unit("KitB", (130, 130))
+        self.f.add_drawable(u)
 
     def randomize_territories(self):
         for i in xrange(12):
@@ -166,4 +170,5 @@ if __name__ == "__main__":
     if team == "":
         team = "Herp"
     g = Game((640, 400), team)
+    #g = Game((1280, 800), team)
     g.run_loop()
