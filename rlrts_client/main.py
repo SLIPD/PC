@@ -80,11 +80,12 @@ class Game(object):
         self.dims = dims
         self.done = False
         self.FPS = 120.0
+        self.team = team
 
         self.clock = pygame.time.Clock()
 
         # Set up game elements
-        self.w = World((1000, 1000), (25, 25, 0))
+        self.w = World((1000, 1000), (25, 25, 0), team=team)
         self.f = frame.Frame(self.screen)
         self.c = control.Control()
         self.s = Slider((10, 10), 500)
@@ -131,6 +132,8 @@ class Game(object):
         # Add drawable objects
         self.f.add_drawable(self.w)
         self.f.add_drawable(self.s)
+        for territory in self.w.territories.values():
+            self.f.add_drawable(territory)
 
         # Position the camera
         self.f.zoom = 1.0

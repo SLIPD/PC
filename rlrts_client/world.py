@@ -1,11 +1,12 @@
 from math import sqrt, floor
 from collections import Counter
+from copy import copy
 
 import pygame
 
 from rlrts_client.funcs import scale, percent_colour
 from rlrts_server import config
-from rlrts_client.values import black, purple
+from rlrts_client.values import black, purple, yellow
 
 
 territory_side = int(sqrt(config.N_TERRITORIES))
@@ -39,12 +40,53 @@ class Drawable(object):
 
 class Territory(Drawable):
     def __init__(self, world, (i, j)):
-        pass
+        super(Territory, self).__init__()
+        self.world = world
+        self.w = world.n_cols // territory_side
+        self.h = world.n_rows // territory_side
+        self.i, self.j = i, j
+        self.x, self.y = i * self.w, j * self.h
+
+        self._surface = pygame.surface.Surface((self.w, self.h))
+        self._surface.set_alpha(51)
+
+    @property
+    def x(self):
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        print value
+        self._x = value
+
+    @property
+    def team(self):
+        return self._team
+
+    @team.setter
+    def team(self, team):
+        self._team = team
+        color = purple if team == self.world.team else yellow
+        self._draw(color)
+
+    def _draw(self, color):
+        print self.x, self.y
+        print self.i, self.j
+        pygame.draw.rect(self._surface,
+                         color,
+                         (0, 0, self.w, self.h)
+                        )
+        self.dirty = True
+
+    def draw(self):
+        return (self.out_surface, self.x, self.y, 1)
 
 
 class World(Drawable):
-    def __init__(self, (width, height), (bx, by, bz)):
+    def __init__(self, (width, height), (bx, by, bz), team):
         super(World, self).__init__()
+
+        self.team = team
         self.dimensions = (self.width, self.height) = (width, height)
         self._wr = float(self.width) / territory_side
         self._hr = float(self.height) / territory_side
@@ -63,10 +105,7 @@ class World(Drawable):
         self._surface = pygame.surface.Surface((self.n_rows, self.n_cols))
 
     def set_territory(self, index, team):
-        (i, j) = index
-        territory_index = tuple(map(int, ((i // self._wr), (j // self._hr))))
-
-        self.territories[territory_index].team = team
+        self.territories[index].team = team
 
     def set_steps(self, indices):
         self.steps = indices
