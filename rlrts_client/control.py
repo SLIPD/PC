@@ -16,10 +16,13 @@ class Control(object):
         self.mouse = []
 
     def register(self, key, callback, method=ON_PRESS):
-        try:
-            self.callbacks[method][key] = callback
-        except KeyError:
-            self.callbacks[method] = {key: callback}
+        if method in self.callbacks:
+            if key in self.callbacks[method]:
+                self.callbacks[method][key].append(callback)
+            else:
+                self.callbacks[method][key] = [callback]
+        else:
+            self.callbacks[method] = {key: [callback]}
 
     def register_mouse(self, condition, callback):
         self.mouse.append((condition, callback))
@@ -28,17 +31,17 @@ class Control(object):
         keys = pygame.key.get_pressed()
         for event in pygame.event.get():
             if ON_PRESS in self.callbacks and event.type == KEYDOWN:
-                for key, callback in self.callbacks[ON_PRESS].iteritems():
+                for key, callbacks in self.callbacks[ON_PRESS].iteritems():
                     if key == event.key:
-                        callback()
+                        [callback() for callback in callbacks]
             elif ON_RELEASE in self.callbacks and event.type == KEYUP:
-                for key, callback in self.callbacks[ON_RELEASE].iteritems():
+                for key, callbacks in self.callbacks[ON_RELEASE].iteritems():
                     if key == event.key:
-                        callback()
+                        [callback() for callback in callbacks]
         if WHILE_PRESSED in self.callbacks:
-            for key, callback in self.callbacks[WHILE_PRESSED].iteritems():
+            for key, callbacks in self.callbacks[WHILE_PRESSED].iteritems():
                 if keys[key]:
-                    callback()
+                    [callback() for callback in callbacks]
         for (condition, callback) in self.mouse:
             if condition(mouse.get_pos(), mouse.get_pressed()):
-                callback(mouse.get_pos(), mouse.get_pressed())
+                    callback(mouse.get_pos(), mouse.get_pressed())
