@@ -16,11 +16,11 @@ n_players = 0
 zero = (55.943721, -3.175135)
 tr = (55.953573, -3.155394)
 
-left = Point(zero[0], 0)
-right = Point(tr[0], 0)
+bottom = Point(zero[0], 0)
+top = Point(tr[0], 0)
 
-bottom = Point(0, zero[1])
-top = Point(0, tr[1])
+left = Point(0, zero[1])
+right = Point(0, tr[1])
 
 w, h = distance.distance(left, right).m, distance.distance(top, bottom).m
 
