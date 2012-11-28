@@ -204,7 +204,7 @@ class Server(object):
         for team_name, team in self.teams.iteritems():
             to_send = []
             for unit in team.units:
-                (x, y) = unit.coords
+                (x, y) = unit.get_step_index()
                 name = unit.name
                 to_send.append((name, (x, y)))
             r = {"state": "position_update",
