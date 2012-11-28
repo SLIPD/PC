@@ -201,12 +201,14 @@ class Server(object):
         return inner_function
 
     def send_units(self):
+        (bx, by, bz) = self.world.base_location
         for team_name, team in self.teams.iteritems():
             to_send = []
             for unit in team.units:
                 (x, y) = unit.get_step_index()
                 name = unit.name
                 to_send.append((name, (x, y)))
+            to_send.append(("BASE", (bx, by)))
             r = {"state": "position_update",
                  "units": to_send}
             (p, stream, sock) = self.team_sockets[team_name]
