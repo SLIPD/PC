@@ -16,11 +16,11 @@ n_players = 0
 zero = (55.943721, -3.175135)
 tr = (55.953573, -3.155394)
 
-left = Point(zero[0], 0)
-right = Point(tr[0], 0)
+bottom = Point(zero[0], 0)
+top = Point(tr[0], 0)
 
-bottom = Point(0, zero[1])
-top = Point(0, tr[1])
+left = Point(0, zero[1])
+right = Point(0, tr[1])
 
 w, h = distance.distance(left, right).m, distance.distance(top, bottom).m
 
@@ -201,12 +201,14 @@ class Server(object):
         return inner_function
 
     def send_units(self):
+        (bx, by, bz) = self.world.base_location
         for team_name, team in self.teams.iteritems():
             to_send = []
             for unit in team.units:
-                (x, y) = unit.coords
+                (x, y) = unit.get_step_index()
                 name = unit.name
                 to_send.append((name, (x, y)))
+            to_send.append(("BASE", (bx, by)))
             r = {"state": "position_update",
                  "units": to_send}
             (p, stream, sock) = self.team_sockets[team_name]
